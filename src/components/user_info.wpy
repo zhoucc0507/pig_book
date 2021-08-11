@@ -1,0 +1,113 @@
+<template>
+  <view class="user-info">
+    <image src="{{ user.avatar_url || '../images/pig.png' }}" style="border-radius: {{ user.avatar_url ? '50%' : '' }}" />
+    <view class="info" bindtap="userInfoEdit">
+      <span class="name">{{ user.user_name || '猪头用户' }}</span>
+      <span class="explain">{{ user.user_desc || '周cc家滴小可爱' }}</span>
+      <image src="../images/icon_edit.png" />
+    </view>
+    <view class="momeny">
+      <span wx:if="{{ origin_price }}">额度:
+        <span style="color: #ff547a">{{ origin_price }}/天</span>
+        <span class="update" bindtap="spularsUpdate">修改</span>
+      </span>
+      <button wx:else plain="true" bindtap="spularsEdit">配置额度</button>
+      <span style="margin-top: 8rpx;">本月支出总额: <span style="color: #ff547a">{{ total_price }}</span></span>
+      <span style="margin-top: 8rpx;">本月额度累积: <span style="color:{{ spulars_price > 0 ? '#18baa5' : '#ff547a' }}">{{ spulars_price }}</span></span>
+    </view>
+  </view>
+</template>
+<script>
+import wepy from 'wepy'
+export default class UserInfo extends wepy.component {
+  props = {
+    origin_price: {
+      type: Number,
+      default: 0
+    },
+    spulars_price: {
+      type: Number,
+      default: 0
+    },
+    total_price: {
+      type: Number,
+      default: 0
+    },
+    user: {
+      type: Object,
+      default: {}
+    }
+  }
+  methods = {
+    spularsEdit() {
+      this.$emit('spularsEdit')
+    },
+    spularsUpdate() {
+      this.$emit('spularsEdit')
+    },
+    userInfoEdit() {
+      this.$emit('userInfoEdit')
+    }
+  }
+}
+</script>
+<style lang="less" scoped>
+.user-info {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  image {
+    width: 128rpx;
+    height: 128rpx;
+  }
+  .info {
+    display: flex;
+    flex-direction: column;
+    margin-left: 24rpx;
+    position: relative;
+    image {
+      width: 50rpx;
+      height: 50rpx;
+      position: absolute;
+      right: -50rpx;
+      top: 14rpx;
+    }
+    .name, .explain {
+      width: 200rpx;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .name {
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .explain {
+      color: #9b9b9b;
+      font-size: 14px;
+      font-weight: 600;
+    }
+  }
+  .momeny {
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    margin-left: auto;
+    color: #9b9b9b;
+    font-weight: 600;
+    .update {
+      margin-left: 10rpx;
+      border: 2rpx solid;
+      padding: 2rpx 12rpx;
+      border-radius: 6rpx;
+    }
+    button {
+      font-size: 14px;
+      margin: 0;
+      border: 4rpx solid;
+      line-height: 45rpx;
+      font-weight: 600;
+    }
+  }
+}
+</style>

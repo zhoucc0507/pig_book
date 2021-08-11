@@ -1,0 +1,294 @@
+<template>
+  <view class="page">
+    <view class="user-card">
+      <view class="card-header">
+        <user-info
+          :origin_price.sync="origin_price"
+          :spulars_price.sync="spulars_price"
+          :total_price.sync="total_price"
+          :user.sync="user" />
+      </view>
+      <view class="card-content">
+        <view class="title" bindtap="recordInsert">
+          小账本详情
+          <image src="../images/icon_add.png" />
+        </view>
+        <view class="pay_list">
+          <view class="deatial" style="color: #fff; background: #000; padding: 24rpx">
+            <view class="date">日期</view>
+            <view class="pay_price">支出金额</view>
+            <view class="surplus_price">可支配金额</view>
+          </view>
+          <blcok wx:if="{{ pay_list.length !== 0 }}">
+            <repeat for="{{ pay_list }}" item="item">
+              <view class="deatial">
+                <view class="date">{{ item.date }}</view>
+                <view class="pay_price">{{ getPrice(item.pay_price) }}</view>
+                <view class="surplus_price" bindtap="viewMore({{ item }})" style="color: {{ origin_price - item.pay_price > 0 ? '#18baa5' : '#ff547a' }}">
+                  <span style="margin: 0 24rpx 0 auto; text-align: center">{{ getPrice(origin_price - item.pay_price) }}</span>
+                  <button plain="true">详情</button>
+                </view>
+              </view>
+            </repeat>
+          </blcok>
+          <view wx:else class="empty">暂无记录</view>
+        </view>
+      </view>
+    </view>
+    <modal-quota
+      :show.sync="quota_show"
+      :value.sync="quota"
+      user_edit="false"
+      title="额度(有点数er)"
+      placeholder="请输入额度" />
+    <modal-record
+      :show.sync="record_show"
+      :value.sync="record"
+      user_edit="false"
+      title="支出金额(诚信是金)"
+      placeholder="请输入支出金额" />
+    <modal-user
+      :show.sync="user_show"
+      :user.sync="user"
+      title="用户信息🐷"
+      user_edit="true" />
+  </view>
+</template>
+<script>
+import wepy from 'wepy'
+import UserInfo from '../components/user_info'
+import ModalPlugin from '../components/modal_plugin'
+import moment from 'moment'
+import getPrice from '../common.wxs'
+export default class MoneyEdit extends wepy.page {
+  wxs = {
+    getPrice: getPrice
+  }
+  data = {
+    origin_price: 0,
+    total_price: 0,
+    spulars_price: '',
+    quota: '',
+    user: {
+      user_name: '',
+      user_desc: '',
+      avatar_url: ''
+    },
+    record: '',
+    quota_show: false,
+    record_show: false,
+    user_show: false,
+    pay_list: []
+  }
+  components = {
+    'user-info': UserInfo,
+    'modal-quota': ModalPlugin,
+    'modal-record': ModalPlugin,
+    'modal-user': ModalPlugin
+  }
+  events = {
+    'onConfirm': (avatar_url, user_name, user_desc) => {
+      if (this.quota_show) {
+        if (!this.quota) {
+          wepy.showToast({ title: '请输入额度', icon: 'none' })
+        } else if (this.quota < 0) {
+          wepy.showToast({ title: '额度能是负数咩?ju头', icon: 'none' })
+        } else if (this.quota > 110) {
+          wepy.showToast({ title: '偷摸干啥捏?米点数', icon: 'none' })
+        } else {
+          wepy.setStorageSync('origin_price', this.quota)
+          this.quota = ''
+          this.quota_show = false
+          this.loadPage()
+        }
+      } else if (this.record_show) {
+        if (!this.record) {
+          wepy.showToast({ title: '请输入支出金额', icon: 'none' })
+        } else {
+          wx.showModal({
+            title: '提示(看清楚了嗷)',
+            content: `确认支出金额 ${this.record}`,
+            success: res => {
+              if (res.confirm) {
+                let nowdate = moment().format('YYYY-MM-DD')
+                let pay_list = wepy.getStorageSync('pay_list') ? JSON.parse(wepy.getStorageSync('pay_list')) : []
+                const flash = pay_list.some(item => item.date === nowdate)
+                if (flash) {
+                  for (let index = 0; index < pay_list.length; index++) {
+                    if (pay_list[index].date === nowdate) {
+                      pay_list[index].detial.push({ time: moment().format('HH:mm'), pay_price: this.record })
+                    }
+                  }
+                } else {
+                  pay_list.push({ date: nowdate, pay_price: 0, detial: [{time: moment().format('HH:mm'), pay_price: this.record}] })
+                }
+                wepy.setStorageSync('pay_list', JSON.stringify(pay_list))
+                this.record = ''
+                this.record_show = false
+                this.loadPage()
+              }
+            }
+          })
+        }
+      } else if (this.user_show) {
+        let user = {
+          user_name: this.user.user_name || '',
+          user_desc: this.user.user_desc || '',
+          avatar_url: this.user.avatar_url || ''
+        }
+        this.user = user
+        wepy.setStorageSync('user', JSON.stringify(user))
+        this.user_show = false
+      }
+    },
+    'onCancel': () => {
+      this.quota_show = false
+      this.record_show = false
+      this.user_show = false
+      if (wepy.getStorageSync('user')) this.user = JSON.parse(wepy.getStorageSync('user'))
+      else this.user = { user_name: '', user_desc: '', avatar_url: '' }
+    },
+    'spularsEdit': () => {
+      this.quota = this.origin_price
+      this.quota_show = true
+      this.record_show = false
+      this.user_show = false
+    },
+    'onInputChange': (value) => {
+      if (value) {
+        if (this.quota_show) this.quota = parseFloat(value)
+        else if (this.record_show) this.record = parseFloat(value)
+      }
+    },
+    'userInfoEdit': () => {
+      this.user_show = true
+      this.record_show = false
+      this.quota_show = false
+    },
+    'onImageChange': () => {
+      let that = this
+      wx.chooseImage({
+        count: 1,
+        success (res) {
+          that.user.avatar_url = res.tempFilePaths[0]
+          that.$apply()
+        }
+      })
+    },
+    'onUserNameChange': (user_name) => {
+      this.user.user_name = user_name
+    },
+    'onUserDescChange': (user_desc) => {
+      this.user.user_desc = user_desc
+    }
+  }
+  methods = {
+    recordInsert() {
+      this.record_show = true
+      this.quota_show = false
+    },
+    viewMore(item) {
+      let content = ''
+      item.detial.map(detial => {
+        content += `${detial.time} 支出金额: ${detial.pay_price}\r\n`
+      })
+      wx.showModal({
+        title: '详情',
+        content: content,
+        showCancel: false
+      })
+    }
+  }
+  onLoad() {
+    let day = moment().format('DD')
+    if (day === '01') {
+      if (!wepy.getStorageSync('firstdate')) wepy.setStorageSync('pay_list', null)
+      wepy.setStorageSync('firstdate', '01')
+    } else {
+      wepy.setStorageSync('firstdate', '')
+    }
+    this.loadPage()
+    this.loadUserInfo()
+  }
+  loadPage() {
+    if (wepy.getStorageSync('origin_price')) this.origin_price = JSON.parse(wepy.getStorageSync('origin_price'))
+    if (wepy.getStorageSync('pay_list')) this.pay_list = JSON.parse(wepy.getStorageSync('pay_list'))
+    if (wepy.getStorageSync('user')) this.user = JSON.parse(wepy.getStorageSync('user'))
+    let spulars_price = 0
+    let total_price = 0
+    for (let index = 0; index < this.pay_list.length; index++) {
+      for (let item of this.pay_list[index].detial) {
+        this.pay_list[index].pay_price += item.pay_price
+      }
+      spulars_price += (this.origin_price - this.pay_list[index].pay_price)
+      total_price += this.pay_list[index].pay_price
+    }
+    this.spulars_price = this.pay_list.length > 0 ? spulars_price.toFixed(0) : this.origin_price
+    this.total_price = total_price.toFixed(0)
+    this.$apply()
+  }
+  loadUserInfo() {
+    this.user_name = wepy.getStorageSync('userName')
+    this.avatar_url = wepy.getStorageSync('avatarUrl')
+    this.$apply()
+  }
+}
+</script>
+<style lang="less" scoped>
+.page {
+  padding: 24rpx 22rpx;
+  background: #f8f8f8;
+  .user-card {
+    background: #fff;
+    border-radius: 10rpx;
+    padding: 22rpx;
+    .card-header {
+      display: flex;
+    }
+    .card-content {
+      margin-top: 36rpx;
+      .title {
+        display: flex;
+        align-items: center;
+        font-size: 16px;
+        font-weight: 500;
+        image {
+          width: 50rpx;
+          height: 50rpx;
+          margin-left: auto;
+        }
+      }
+      .pay_list {
+        margin-top: 18rpx;
+        .empty {
+          margin-top: 48rpx;
+          color: #9b9b9b;
+          text-align: center;
+        }
+        .deatial {
+          display: flex;
+          margin-top: 36rpx;
+          font-size: 14px;
+          font-weight: 800;
+          .date, .pay_price, .surplus_price {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .surplus_price {
+            button {
+              font-size: 14px;
+              padding: 0 16rpx;
+              margin: 0 0 0 auto;
+              border: none;
+              text-decoration: underline;
+            }
+          }
+        }
+      }
+    }
+  }
+
+}
+</style>
