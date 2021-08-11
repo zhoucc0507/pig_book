@@ -200,6 +200,7 @@ export default class MoneyEdit extends wepy.page {
     }
   }
   onLoad() {
+    console.log('pigzhou ❤ pigliu')
     let day = moment().format('DD')
     if (day === '01') {
       if (!wepy.getStorageSync('firstdate')) wepy.setStorageSync('pay_list', null)
