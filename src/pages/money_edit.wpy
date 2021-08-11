@@ -156,8 +156,8 @@ export default class MoneyEdit extends wepy.page {
     },
     'onInputChange': (value) => {
       if (value) {
-        if (this.quota_show) this.quota = parseFloat(value)
-        else if (this.record_show) this.record = parseFloat(value)
+        if (this.quota_show) this.quota = JSON.parse(value)
+        else if (this.record_show) this.record = JSON.parse(value)
       }
     },
     'userInfoEdit': () => {
