@@ -156,8 +156,8 @@ export default class MoneyEdit extends wepy.page {
     },
     'onInputChange': (value) => {
       if (value) {
-        if (this.quota_show) this.quota = parseFloat(value)
-        else if (this.record_show) this.record = parseFloat(value)
+        if (this.quota_show) this.quota = JSON.parse(value)
+        else if (this.record_show) this.record = JSON.parse(value)
       }
     },
     'userInfoEdit': () => {
@@ -200,6 +200,7 @@ export default class MoneyEdit extends wepy.page {
     }
   }
   onLoad() {
+    console.log('pigzhou ❤ pigliu')
     let day = moment().format('DD')
     if (day === '01') {
       if (!wepy.getStorageSync('firstdate')) wepy.setStorageSync('pay_list', null)
