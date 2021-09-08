@@ -37,14 +37,14 @@
     </view>
     <modal-quota
       :show.sync="quota_show"
-      :value.sync="quota"
       user_edit="false"
+      cate_edit="false"
       title="额度(有点数er)"
       placeholder="请输入额度" />
     <modal-record
       :show.sync="record_show"
-      :value.sync="record"
       user_edit="false"
+      cate_edit="true"
       title="支出金额(诚信是金)"
       placeholder="请输入支出金额" />
     <modal-user
@@ -75,10 +75,12 @@ export default class MoneyEdit extends wepy.page {
       avatar_url: ''
     },
     record: '',
+    cate: '',
     quota_show: false,
     record_show: false,
     user_show: false,
-    pay_list: []
+    pay_list: [],
+    ec: {}
   }
   components = {
     'user-info': UserInfo,
@@ -107,7 +109,7 @@ export default class MoneyEdit extends wepy.page {
         } else {
           wx.showModal({
             title: '提示(看清楚了嗷)',
-            content: `确认支出金额 ${this.record}`,
+            content: `确认支出金额 ${this.record}(${this.cate || '未选择'})`,
             success: res => {
               if (res.confirm) {
                 let nowdate = moment().format('YYYY-MM-DD')
@@ -116,14 +118,15 @@ export default class MoneyEdit extends wepy.page {
                 if (flash) {
                   for (let index = 0; index < pay_list.length; index++) {
                     if (pay_list[index].date === nowdate) {
-                      pay_list[index].detial.push({ time: moment().format('HH:mm'), pay_price: this.record })
+                      pay_list[index].detial.push({ time: moment().format('HH:mm'), pay_price: this.record, cate: this.cate })
                     }
                   }
                 } else {
-                  pay_list.push({ date: nowdate, pay_price: 0, detial: [{time: moment().format('HH:mm'), pay_price: this.record}] })
+                  pay_list.push({ date: nowdate, pay_price: 0, detial: [{time: moment().format('HH:mm'), pay_price: this.record, cate: this.cate}] })
                 }
                 wepy.setStorageSync('pay_list', JSON.stringify(pay_list))
                 this.record = ''
+                this.cate = ''
                 this.record_show = false
                 this.loadPage()
               }
@@ -160,6 +163,9 @@ export default class MoneyEdit extends wepy.page {
         else if (this.record_show) this.record = JSON.parse(value)
       }
     },
+    'onCateChange': (value) => {
+      if (value) this.cate = value
+    },
     'userInfoEdit': () => {
       this.user_show = true
       this.record_show = false
@@ -190,7 +196,8 @@ export default class MoneyEdit extends wepy.page {
     viewMore(item) {
       let content = ''
       item.detial.map(detial => {
-        content += `${detial.time} 支出金额: ${detial.pay_price}\r\n`
+        const cate = detial.cate ? `(${detial.cate})` : ''
+        content += `${detial.time} 支出金额:${detial.pay_price}${cate}\r\n`
       })
       wx.showModal({
         title: '详情',
