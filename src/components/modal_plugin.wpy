@@ -7,10 +7,18 @@
     <view class="modal-dialog" wx:if="{{show}}">
       <view class="modal-title">{{ title }}</view>
       <block wx:if="{{ user_edit === 'false' }}">
+        <view class="modal-content" style="padding-bottom: 0; margin-bottom: -24rpx">
+          <view class="modal-input" wx:if="{{ cate_edit === 'true' }}">
+            <input
+              placeholder-class="input-holder"
+              bindinput="onCateChange"
+              class="input"
+              placeholder="请输入购买品类(选填)" />
+          </view>
+        </view>
         <view class="modal-content">
           <view class="modal-input">
             <input
-              value="{{ value }}"
               placeholder-class="input-holder"
               type="number"
               maxlength="10"
@@ -61,15 +69,15 @@ export default class ModalPlugin extends wepy.component {
       type: Boolean,
       default: false
     },
-    value: {
-      type: Number,
-      default: undefined
-    },
     placeholder: {
       type: String,
       default: ''
     },
     user_edit: {
+      type: String,
+      default: 'false'
+    },
+    cate_edit: {
       type: String,
       default: 'false'
     },
@@ -81,6 +89,9 @@ export default class ModalPlugin extends wepy.component {
   methods = {
     onInputChange(e) {
       this.$emit('onInputChange', e.detail.value)
+    },
+    onCateChange(e) {
+      this.$emit('onCateChange', e.detail.value)
     },
     onConfirm() {
       this.$emit('onConfirm')
@@ -115,6 +126,8 @@ export default class ModalPlugin extends wepy.component {
   color: #fff;
 }
 .modal-dialog {
+  animation: fadeleftIn .3s;
+  animation-name: popIn;
   position: fixed;
   top: 25%;
   left: 48rpx;
@@ -174,6 +187,36 @@ input-holder {
     width: 150rpx;
     height: 150rpx;
     border-radius: 50%;
+  }
+}
+@keyframes fadeleftIn {
+  0% {
+    -webkit-transform: translate3d(100%, 0, 0);
+    -webkit-transform: translate3d(100%, 0, 0);
+    transform: translate3d(100%, 0, 0);
+    transform: translate3d(100%, 0, 0);
+  }
+  100% {
+    -webkit-transform: none;
+    transform: none;
+  }
+}
+@keyframes popIn {
+  0% {
+    -webkit-transform: scale3d(0, 0, 0);
+    transform: scale3d(0.5, 0.5, 0.5);
+    opacity: 0;
+  }
+  50% {
+    -webkit-animation-timing-function: cubic-bezier(0.47, 0, 0.745, 0.715);
+    animation-timing-function: cubic-bezier(0.47, 0, 0.745, 0.715);
+  }
+  100% {
+    -webkit-transform: scale3d(1, 1, 1);
+    transform: scale3d(1, 1, 1);
+    -webkit-animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    opacity: 1;
   }
 }
 </style>
