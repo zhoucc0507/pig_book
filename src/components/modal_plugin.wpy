@@ -4,16 +4,22 @@
       class="modal-mask"
       catchtouchmove="preventTouchMove"
       wx:if="{{show}}" />
-    <view class="modal-dialog" wx:if="{{show}}">
+    <view class="modal-dialog" wx:if="{{ show }}" style="top: {{ cate_edit === 'true' ? '15%' : '25%' }}">
       <view class="modal-title">{{ title }}</view>
       <block wx:if="{{ user_edit === 'false' }}">
         <view class="modal-content" style="padding-bottom: 0; margin-bottom: -24rpx">
+          <view class="cate">
+            <repeat for="{{ cates }}" item="cate">
+              <span class="tag" bindtap="onCateSelect({{ cate }})" style="background: {{ cate.background }}; display: block; margin-bottom: 12rpx">{{ cate.name }}</span>
+            </repeat>
+          </view>
           <view class="modal-input" wx:if="{{ cate_edit === 'true' }}">
             <input
               placeholder-class="input-holder"
               bindinput="onCateChange"
               class="input"
-              placeholder="请输入购买品类(选填)" />
+              placeholder="请输入购买详情(选填)">
+              <div class="tag input-tag" style="background: {{ background }}">{{ cate }}</div></input>
           </view>
         </view>
         <view class="modal-content">
@@ -86,6 +92,20 @@ export default class ModalPlugin extends wepy.component {
       default: {}
     }
   }
+  data = {
+    cates: [
+      {name: '红包', background: '#f50'},
+      {name: '餐饮', background: '#87d068'},
+      {name: '出行', background: '#87e8de'},
+      {name: '百货', background: '#d3adf7'},
+      {name: '服饰', background: '#adc6ff'},
+      {name: '美妆', background: '#91d5ff'},
+      {name: '数码', background: '#ffadd2'},
+      {name: '美发', background: '#ffe58f'}
+    ],
+    cate: '',
+    background: ''
+  }
   methods = {
     onInputChange(e) {
       this.$emit('onInputChange', e.detail.value)
@@ -107,6 +127,11 @@ export default class ModalPlugin extends wepy.component {
     },
     onUserDescChange(e) {
       this.$emit('onUserDescChange', e.detail.value)
+    },
+    onCateSelect(cate) {
+      this.cate = cate.name
+      this.background = cate.background
+      this.$emit('onCateSelect', cate.name)
     }
   }
 }
@@ -143,8 +168,27 @@ export default class ModalPlugin extends wepy.component {
   letter-spacing: 2rpx;
   text-align: center;
 }
+.tag {
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 20rpx;
+}
+.input-tag {
+  margin-top: -28rpx;
+  position: absolute;
+  right: 12rpx;
+  top: 48rpx;
+}
 .modal-content {
   padding: 60rpx;
+  .cate {
+    margin-bottom: 24rpx;
+    display: flex;
+    flex-wrap: wrap;
+  }
 }
 .modal-input {
   border: 2rpx solid #f1f1f1;
@@ -157,6 +201,7 @@ export default class ModalPlugin extends wepy.component {
   line-height: 28rpx;
   padding: 0 20rpx;
   box-sizing: border-box;
+  position: relative;
 }
 input-holder {
   color: #9b9b9b;
