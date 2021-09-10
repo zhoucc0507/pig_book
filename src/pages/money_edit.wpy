@@ -9,11 +9,22 @@
           :user.sync="user" />
       </view>
       <view class="card-content">
-        <view class="title" bindtap="recordInsert">
+        <view class="title">
           小账本详情
-          <image src="../images/icon_add.png" />
+          <view class="edit">
+            <view bindtap="recordInsert" style="display: flex; width: 150rpx; justify-content: flex-end">
+              <image src="../images/icon_add.png"  />
+            </view>
+            <image style="width: 48rpx; height: 48rpx; margin-left: 24rpx" bindtap="onCateFilter" src="../images/icon_screen.png" />
+          </view>
         </view>
-        <view class="pay_list">
+        <view style="height: {{ cates_show ? 128 : 0 }}rpx" class="cates_list">
+          <repeat for="{{ cates }}" item="cate">
+            <span bindtap="onChooseCate({{ cate }})" style="background: {{ cate.background }}; opacity: {{ cate.name === cate_select ? 0.3 : 1 }}; pointer-events: {{ cate.name === cate_select ? 'none' : '' }}">{{ cate.name }}</span>
+          </repeat>
+          <span bindtap="onReset" style="color: #999; border: 2rpx dashed; padding: 4rpx 88rpx">重置</span>
+        </view>
+        <view class="pay_list" style="margin-top: {{ cates_show ? 0 : '-30rpx' }}">
           <view class="deatial" style="color: #fff; background: #000; padding: 24rpx">
             <view class="date">日期</view>
             <view class="pay_price">支出金额</view>
@@ -43,6 +54,7 @@
       placeholder="请输入额度" />
     <modal-record
       :show.sync="record_show"
+      :cates.sync="cates"
       user_edit="false"
       cate_edit="true"
       title="支出金额(诚信是金)"
@@ -75,12 +87,24 @@ export default class MoneyEdit extends wepy.page {
       avatar_url: ''
     },
     record: '',
-    cateValue: '',
+    cate_value: '',
     cate: '',
+    cate_select: '',
+    cates_show: false,
     quota_show: false,
     record_show: false,
     user_show: false,
-    pay_list: []
+    pay_list: [],
+    cates: [
+      {name: '红包', background: '#f50'},
+      {name: '餐饮', background: '#87d068'},
+      {name: '出行', background: '#87e8de'},
+      {name: '百货', background: '#d3adf7'},
+      {name: '服饰', background: '#adc6ff'},
+      {name: '美妆', background: '#91d5ff'},
+      {name: '数码', background: '#ffadd2'},
+      {name: '娱乐', background: '#ffe58f'}
+    ]
   }
   components = {
     'user-info': UserInfo,
@@ -111,7 +135,7 @@ export default class MoneyEdit extends wepy.page {
         } else {
           wx.showModal({
             title: '提示(看清楚了嗷)',
-            content: `确认支出金额 ${this.record}(「${this.cate}」${this.cateValue || '无详情'})`,
+            content: `确认支出金额 ${this.record}(「${this.cate}」${this.cate_value || '无详情'})`,
             success: res => {
               if (res.confirm) {
                 let nowdate = moment().format('YYYY-MM-DD')
@@ -120,16 +144,15 @@ export default class MoneyEdit extends wepy.page {
                 if (flash) {
                   for (let index = 0; index < pay_list.length; index++) {
                     if (pay_list[index].date === nowdate) {
-                      pay_list[index].detial.push({ time: moment().format('HH:mm'), pay_price: this.record, cate: this.cateValue, category: this.cate })
+                      pay_list[index].detial.push({ time: moment().format('HH:mm'), pay_price: this.record, cate: this.cate_value, category: this.cate })
                     }
                   }
                 } else {
-                  pay_list.push({ date: nowdate, pay_price: 0, detial: [{time: moment().format('HH:mm'), pay_price: this.record, cate: this.cateValue, category: this.cate}] })
+                  pay_list.push({ date: nowdate, pay_price: 0, detial: [{time: moment().format('HH:mm'), pay_price: this.record, cate: this.cate_value, category: this.cate}] })
                 }
                 wepy.setStorageSync('pay_list', JSON.stringify(pay_list))
                 this.record = ''
-                this.cateValue = ''
-                this.cate = ''
+                this.cate_value = ''
                 this.record_show = false
                 this.loadPage()
               }
@@ -167,7 +190,7 @@ export default class MoneyEdit extends wepy.page {
       }
     },
     'onCateChange': (value, cate) => {
-      if (value) this.cateValue = value
+      if (value) this.cate_value = value
     },
     'onCateSelect': (cate) => {
       if (cate) this.cate = cate
@@ -199,6 +222,33 @@ export default class MoneyEdit extends wepy.page {
       this.record_show = true
       this.quota_show = false
     },
+    onReset() {
+      this.cate_select = ''
+      this.loadPage()
+    },
+    onCateFilter() {
+      this.cates_show = !this.cates_show
+    },
+    onChooseCate(cate) {
+      this.cate_select = ''
+      this.loadPage()
+      this.cate_select = cate.name
+      let pay_list = []
+      for (let list of this.pay_list) {
+        let detial = []
+        for (let item of list.detial) {
+          if (item && item.category === this.cate_select) detial.push(item)
+        }
+        if (detial.length !== 0) {
+          let listCopy = Object.assign({}, list, {})
+          listCopy.detial = detial
+          listCopy.pay_price = 0
+          pay_list.push(listCopy)
+        }
+      }
+      this.pay_list = pay_list
+      this.loadPage()
+    },
     viewMore(item) {
       let content = ''
       item.detial.map(detial => {
@@ -221,23 +271,6 @@ export default class MoneyEdit extends wepy.page {
   }
   onLoad() {
     console.log('pigzhou ❤ pigliu')
-    let updateManager = wx.getUpdateManager()
-    updateManager.onCheckForUpdate(function (res) {
-      console.log('hasUpdate', res.hasUpdate)
-    })
-    updateManager.onUpdateReady(function () {
-      wepy.showModal({
-        title: '更新提示',
-        content: '新版本已准备好，将重启小程序进行更新',
-        showCancel: false
-      })
-        .then(function (res) {
-          updateManager.applyUpdate()
-        })
-    })
-    updateManager.onUpdateFailed(function () {
-      console.log('update failed')
-    })
     let day = moment().format('DD')
     if (day === '01') {
       if (!wepy.getStorageSync('firstdate')) wepy.setStorageSync('pay_list', null)
@@ -250,7 +283,7 @@ export default class MoneyEdit extends wepy.page {
   }
   loadPage() {
     if (wepy.getStorageSync('origin_price')) this.origin_price = JSON.parse(wepy.getStorageSync('origin_price'))
-    if (wepy.getStorageSync('pay_list')) this.pay_list = JSON.parse(wepy.getStorageSync('pay_list'))
+    if (wepy.getStorageSync('pay_list') && !this.cate_select) this.pay_list = JSON.parse(wepy.getStorageSync('pay_list'))
     if (wepy.getStorageSync('user')) this.user = JSON.parse(wepy.getStorageSync('user'))
     let spulars_price = 0
     let total_price = 0
@@ -290,14 +323,37 @@ export default class MoneyEdit extends wepy.page {
         align-items: center;
         font-size: 16px;
         font-weight: 500;
+        .edit {
+          width: 50%;
+          align-items: center;
+          display: flex;
+          justify-content: flex-end;
+          margin-left: auto;
+        }
         image {
           width: 50rpx;
           height: 50rpx;
-          margin-left: auto;
+        }
+      }
+      .cates_list {
+        overflow: hidden;
+        transition: height 0.3s;
+        margin-bottom: -12rpx;
+        margin-top: 24rpx;
+        display: flex;
+        flex-wrap: wrap;
+        span {
+          margin-bottom: 18rpx;
+          padding: 6rpx 28rpx;
+          border-radius: 8rpx;
+          color: #fff;
+          font-size: 13px;
+          white-space: nowrap;
+          margin-right: 20rpx;
+          display: block;
         }
       }
       .pay_list {
-        margin-top: 18rpx;
         .empty {
           margin-top: 48rpx;
           color: #9b9b9b;
