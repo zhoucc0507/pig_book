@@ -75,12 +75,12 @@ export default class MoneyEdit extends wepy.page {
       avatar_url: ''
     },
     record: '',
+    cateValue: '',
     cate: '',
     quota_show: false,
     record_show: false,
     user_show: false,
-    pay_list: [],
-    ec: {}
+    pay_list: []
   }
   components = {
     'user-info': UserInfo,
@@ -106,10 +106,12 @@ export default class MoneyEdit extends wepy.page {
       } else if (this.record_show) {
         if (!this.record) {
           wepy.showToast({ title: '请输入支出金额', icon: 'none' })
+        } else if (!this.cate) {
+          wepy.showToast({ title: '请选择支出品类', icon: 'none' })
         } else {
           wx.showModal({
             title: '提示(看清楚了嗷)',
-            content: `确认支出金额 ${this.record}(${this.cate || '未选择'})`,
+            content: `确认支出金额 ${this.record}(「${this.cate}」${this.cateValue || '无详情'})`,
             success: res => {
               if (res.confirm) {
                 let nowdate = moment().format('YYYY-MM-DD')
@@ -118,14 +120,15 @@ export default class MoneyEdit extends wepy.page {
                 if (flash) {
                   for (let index = 0; index < pay_list.length; index++) {
                     if (pay_list[index].date === nowdate) {
-                      pay_list[index].detial.push({ time: moment().format('HH:mm'), pay_price: this.record, cate: this.cate })
+                      pay_list[index].detial.push({ time: moment().format('HH:mm'), pay_price: this.record, cate: this.cateValue, category: this.cate })
                     }
                   }
                 } else {
-                  pay_list.push({ date: nowdate, pay_price: 0, detial: [{time: moment().format('HH:mm'), pay_price: this.record, cate: this.cate}] })
+                  pay_list.push({ date: nowdate, pay_price: 0, detial: [{time: moment().format('HH:mm'), pay_price: this.record, cate: this.cateValue, category: this.cate}] })
                 }
                 wepy.setStorageSync('pay_list', JSON.stringify(pay_list))
                 this.record = ''
+                this.cateValue = ''
                 this.cate = ''
                 this.record_show = false
                 this.loadPage()
@@ -163,8 +166,11 @@ export default class MoneyEdit extends wepy.page {
         else if (this.record_show) this.record = JSON.parse(value)
       }
     },
-    'onCateChange': (value) => {
-      if (value) this.cate = value
+    'onCateChange': (value, cate) => {
+      if (value) this.cateValue = value
+    },
+    'onCateSelect': (cate) => {
+      if (cate) this.cate = cate
     },
     'userInfoEdit': () => {
       this.user_show = true
@@ -196,8 +202,15 @@ export default class MoneyEdit extends wepy.page {
     viewMore(item) {
       let content = ''
       item.detial.map(detial => {
-        const cate = detial.cate ? `(${detial.cate})` : ''
-        content += `${detial.time} 支出金额:${detial.pay_price}${cate}\r\n`
+        if (detial.category && detial.cate) {
+          content += `${detial.time} 支出金额:${detial.pay_price}(「${detial.category}」${detial.cate})\r\n`
+        } else if (detial.category && !detial.cate) {
+          content += `${detial.time} 支出金额:${detial.pay_price}(「${detial.category}」)\r\n`
+        } else if (!detial.category && detial.cate) {
+          content += `${detial.time} 支出金额:${detial.pay_price}(${detial.cate})\r\n`
+        } else {
+          content += `${detial.time} 支出金额:${detial.pay_price}\r\n`
+        }
       })
       wx.showModal({
         title: '详情',
@@ -208,6 +221,23 @@ export default class MoneyEdit extends wepy.page {
   }
   onLoad() {
     console.log('pigzhou ❤ pigliu')
+    let updateManager = wx.getUpdateManager()
+    updateManager.onCheckForUpdate(function (res) {
+      console.log('hasUpdate', res.hasUpdate)
+    })
+    updateManager.onUpdateReady(function () {
+      wepy.showModal({
+        title: '更新提示',
+        content: '新版本已准备好，将重启小程序进行更新',
+        showCancel: false
+      })
+        .then(function (res) {
+          updateManager.applyUpdate()
+        })
+    })
+    updateManager.onUpdateFailed(function () {
+      console.log('update failed')
+    })
     let day = moment().format('DD')
     if (day === '01') {
       if (!wepy.getStorageSync('firstdate')) wepy.setStorageSync('pay_list', null)
