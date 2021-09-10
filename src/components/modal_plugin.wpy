@@ -8,7 +8,7 @@
       <view class="modal-title">{{ title }}</view>
       <block wx:if="{{ user_edit === 'false' }}">
         <view class="modal-content" style="padding-bottom: 0; margin-bottom: -24rpx">
-          <view class="cate">
+          <view class="cate" wx:if="{{ cate_edit === 'true' }}">
             <repeat for="{{ cates }}" item="cate">
               <span class="tag" bindtap="onCateSelect({{ cate }})" style="background: {{ cate.background }}; display: block; margin-bottom: 12rpx">{{ cate.name }}</span>
             </repeat>
