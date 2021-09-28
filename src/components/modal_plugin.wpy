@@ -13,6 +13,16 @@
               <span class="tag" bindtap="onCateSelect({{ cate }})" style="background: {{ cate.background }}; display: block; margin-bottom: 12rpx">{{ cate.name }}</span>
             </repeat>
           </view>
+          <view class="modal-input" wx:if="{{ repair_edit === 'true' }}" style="margin-bottom: 18rpx">
+            <picker mode="date" start="2021-09-01" end="{{ endDate }}" bindchange="onDateChange">
+              <input
+                placeholder-class="input-holder"
+                class="input"
+                disabled="true"
+                placeholder="请选择补签日期"
+                value="{{ date }}" />
+            </picker>
+          </view>
           <view class="modal-input" wx:if="{{ cate_edit === 'true' }}">
             <input
               placeholder-class="input-holder"
@@ -65,6 +75,7 @@
 </template>
 <script>
 import wepy from 'wepy'
+import moment from 'moment'
 export default class ModalPlugin extends wepy.component {
   props = {
     title: {
@@ -87,6 +98,10 @@ export default class ModalPlugin extends wepy.component {
       type: String,
       default: 'false'
     },
+    repair_edit: {
+      type: String,
+      default: 'false'
+    },
     user: {
       type: Object,
       default: {}
@@ -94,11 +109,16 @@ export default class ModalPlugin extends wepy.component {
     cates: {
       type: Array,
       default: []
+    },
+    date: {
+      type: String,
+      default: ''
     }
   }
   data = {
     cate: '',
-    background: ''
+    background: '',
+    endDate: moment().format('YYYY-MM-DD')
   }
   methods = {
     onInputChange(e) {
@@ -126,12 +146,15 @@ export default class ModalPlugin extends wepy.component {
       this.cate = cate.name
       this.background = cate.background
       this.$emit('onCateSelect', cate.name)
+    },
+    onDateChange(e) {
+      this.$emit('onDateChange', e.detail.value)
     }
   }
 }
 </script>
 
-<style lang="less" scoped>
+<style lang="less">
 .modal-mask {
   position: fixed;
   top: 0;
