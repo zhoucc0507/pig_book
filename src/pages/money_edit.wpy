@@ -235,8 +235,8 @@ export default class MoneyEdit extends wepy.page {
     },
     'onInputChange': (value) => {
       if (value) {
-        if (this.quota_show) this.quota = JSON.parse(value)
-        else if (this.record_show || this.repair_show) this.record = JSON.parse(value)
+        if (this.quota_show) this.quota = +value
+        else if (this.record_show || this.repair_show) this.record = +value
       }
     },
     'onCateChange': (value, cate) => {
@@ -354,8 +354,8 @@ export default class MoneyEdit extends wepy.page {
       spulars_price += (this.origin_price - this.pay_list[index].pay_price)
       total_price += this.pay_list[index].pay_price
     }
-    this.spulars_price = this.pay_list.length > 0 ? spulars_price.toFixed(0) : this.origin_price
-    this.total_price = total_price.toFixed(0)
+    this.spulars_price = this.pay_list.length > 0 ? spulars_price : this.origin_price
+    this.total_price = total_price
     this.$apply()
   }
   loadUserInfo() {
