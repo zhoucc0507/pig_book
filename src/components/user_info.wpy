@@ -2,9 +2,8 @@
   <view class="user-info">
     <image src="{{ user.avatar_url || '../images/pig.png' }}" style="border-radius: {{ user.avatar_url ? '50%' : '' }}" />
     <view class="info" bindtap="userInfoEdit">
-      <span class="name">{{ user.user_name || '猪头用户' }}</span>
+      <span class="name">{{ user.user_name || '猪头用户' }}<image class="icon_edit" bindtap="userInfoEdit" src="../images/icon_edit.png" /></span>
       <span class="explain">{{ user.user_desc || '周cc家滴小可爱' }}</span>
-      <image src="../images/icon_edit.png" />
     </view>
     <view class="momeny">
       <span wx:if="{{ origin_price }}">额度:
@@ -59,26 +58,19 @@ export default class UserInfo extends wepy.component {
   image {
     width: 128rpx;
     height: 128rpx;
+    margin-left: 5rpx;
+  }
+  .icon_edit {
+    width: 50rpx;
+    height: 50rpx;
   }
   .info {
     display: flex;
     flex-direction: column;
     margin-left: 24rpx;
-    position: relative;
-    image {
-      width: 50rpx;
-      height: 50rpx;
-      position: absolute;
-      right: -50rpx;
-      top: 14rpx;
-    }
-    .name, .explain {
-      width: 200rpx;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
     .name {
+      display: flex;
+      align-items: center;
       font-size: 24px;
       font-weight: 600;
     }

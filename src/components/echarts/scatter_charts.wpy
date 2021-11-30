@@ -1,0 +1,125 @@
+<template>
+  <view class="scatter-chart">
+    <ec-canvas id="scatter_chart" canvas-id="scatter-chart" ec="{{ ec }}" bind:init="onInit" />
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import * as echarts from './ec-canvas/echarts.js'
+
+export default class ScatterChart extends wepy.component {
+  data = {
+    ec: {},
+    cates: [
+      {name: '红包', background: '#ff4d4f'},
+      {name: '餐饮', background: '#ffc300'},
+      {name: '出行', background: '#48b755'},
+      {name: '百货', background: '#b4b68f'},
+      {name: '服饰', background: '#03b6fd'},
+      {name: '美妆', background: '#bc8ddb'},
+      {name: '数码', background: '#c24770'},
+      {name: '娱乐', background: '#ca9654'}
+    ]
+  }
+
+  methods = {
+    onInit(e) {
+      this.initChart(e.detail.canvas, e.detail.width, e.detail.height)
+    }
+  }
+
+  getTagColor (tag, cates) {
+    var background = ''
+    for (var index = 0; index < cates.length; index++) {
+      if (cates[index].name === tag) background = cates[index].background
+    }
+    return background
+  }
+
+  initChart = (canvas, width, height) => {
+    let listArr = []
+    let hasOwns = {}
+    let pay_list = wepy.getStorageSync('pay_list') ? JSON.parse(wepy.getStorageSync('pay_list')) : []
+    for (let list of pay_list) {
+      for (let detial of list.detial) {
+        listArr.push(detial)
+      }
+    }
+    listArr = listArr.reduce((preVal, curVal) => {
+      if (hasOwns[curVal.category]) {
+        for (let index = 0; index < preVal.length; index++) {
+          if (preVal[index].category === curVal.category) preVal[index].pay_price = preVal[index].pay_price + curVal.pay_price
+        }
+      } else {
+        preVal.push(curVal)
+        hasOwns[curVal.category] = true
+      }
+      return preVal
+    }, [])
+
+    const chart = echarts.init(canvas, null, {
+      width,
+      height
+    })
+
+    canvas.setChart(chart)
+
+    let color = []
+    let data = []
+
+    for (let item of listArr) {
+      color.push(this.getTagColor(item.category, this.cates))
+      data.push({ value: item.pay_price, name: item.category })
+    }
+
+    const option = {
+      color,
+      tooltip: {
+        trigger: 'item'
+      },
+      legend: {
+        top: 0,
+        right: 18,
+        orient: 'vertical',
+        itemWidth: 12,
+        itemHeight: 8
+      },
+      series: {
+        type: 'pie',
+        radius: ['30%', '60%'],
+        label: {
+          formatter: '{name|{b}}\n{value|{c} 元} {per|{d}%}',
+          lineHeight: 15,
+          rich: {
+            value: {
+              fontSize: 10,
+              color: '#000'
+            },
+            per: {
+              fontSize: 10,
+              color: '#999'
+            }
+          }
+        },
+        labelLine: {
+          show: false,
+          length: 10,
+          length2: 0
+        },
+        data: data
+      }
+    }
+
+    chart.setOption(option)
+    return chart
+  }
+}
+</script>
+
+<style lang='less'>
+.scatter-chart {
+  height: 600rpx;
+  background: #fff;
+}
+</style>
