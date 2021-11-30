@@ -4,16 +4,36 @@
       class="modal-mask"
       catchtouchmove="preventTouchMove"
       wx:if="{{show}}" />
-    <view class="modal-dialog" wx:if="{{ show }}" style="top: {{ cate_edit === 'true' ? '15%' : '25%' }}">
+    <view class="modal-dialog" wx:if="{{ show }}" style="top: {{ cate_edit === 'true' ? '12%' : '22%' }}">
       <view class="modal-title">{{ title }}</view>
-      <block wx:if="{{ user_edit === 'false' }}">
+      <block wx:if="{{ detial_edit === 'true' }}">
+        <view class="modal-content">
+          <view class="view-tip">
+            <image src="../images/icon_cancadar.png" style="width: 70rpx" mode="widthFix" />
+            <span class="tip-date">{{ detial.date }}</span>
+            <span style="margin-left: 24rpx">支出金额: <span style="color: #18baa5; font-size: 16px">{{ detial.pay_price }}</span></span>
+            <span style="margin-left: 24rpx">可支配金额: <span style="font-size: 16px; color: {{ origin_price - detial.pay_price > 0 ? '#18baa5' : '#ff547a' }}">{{ origin_price - detial.pay_price }}</span></span>
+          </view>
+          <view class="view-slice">
+            <repeat for="{{ detial.detial }}" item="item" key="id">
+              <view class="view-item">
+                <span wx:if="{{ item.category }}" class="tag" style="font-size: 12px; padding: 4rpx 12rpx; border-radius: 8rpx;background: {{ common.getTagColor(item.category, cates) }}">{{ item.category }}</span>
+                <span>{{ item.time }} </span>
+                <span>{{ item.cate }}</span>
+                <span style="color: #ff547a; font-size: 18px"> {{ item.pay_price }} </span>元
+              </view>
+            </repeat>
+          </view>
+        </view>
+      </block>
+      <block wx:elif="{{ user_edit === 'false' }}">
         <view class="modal-content" style="padding-bottom: 0; margin-bottom: -24rpx">
           <view class="cate" wx:if="{{ cate_edit === 'true' }}">
             <repeat for="{{ cates }}" item="cate">
-              <span class="tag" bindtap="onCateSelect({{ cate }})" style="background: {{ cate.background }}; display: block; margin-bottom: 12rpx">{{ cate.name }}</span>
+              <span class="tag" bindtap="onCateSelect({{ cate }})" style="background: {{ cate.background }}; display: block; margin-bottom: 18rpx">{{ cate.name }}</span>
             </repeat>
           </view>
-          <view class="modal-input" wx:if="{{ repair_edit === 'true' }}" style="margin-bottom: 18rpx">
+          <view class="modal-input" wx:if="{{ repair_edit === 'true' }}" style="margin-bottom: 28rpx">
             <picker mode="date" start="2021-09-01" end="{{ endDate }}" bindchange="onDateChange">
               <input
                 placeholder-class="input-holder"
@@ -23,13 +43,13 @@
                 value="{{ date }}" />
             </picker>
           </view>
-          <view class="modal-input" wx:if="{{ cate_edit === 'true' }}">
+          <view class="modal-input" wx:if="{{ cate_edit === 'true' }}" style="margin-bottom: 12rpx">
             <input
               placeholder-class="input-holder"
               bindinput="onCateChange"
               class="input"
               placeholder="请输入购买详情(选填)">
-              <div class="tag input-tag" style="background: {{ background }}; padding: 6rpx 16rpx">{{ cate }}</div></input>
+              <div class="tag input-tag" style="background: {{ background }}; padding: 6rpx 16rpx; border-radius: 8rpx">{{ cate }}</div></input>
           </view>
         </view>
         <view class="modal-content">
@@ -66,7 +86,9 @@
         </view>
       </block>
 
-      <view class="modal-footer">
+      <button class="btn-close" wx:if="{{ detial_edit === 'true' }}" plain="true" bindtap="onCancel">ok</button>
+
+      <view class="modal-footer" wx:else>
         <view class="btn-cancel" bindtap="onCancel">取消</view>
         <view class="btn-confirm" bindtap="onConfirm">确定</view>
       </view>
@@ -76,7 +98,11 @@
 <script>
 import wepy from 'wepy'
 import moment from 'moment'
+import common from '../common.wxs'
 export default class ModalPlugin extends wepy.component {
+  wxs = {
+    common: common
+  }
   props = {
     title: {
       type: String,
@@ -102,7 +128,15 @@ export default class ModalPlugin extends wepy.component {
       type: String,
       default: 'false'
     },
+    detial_edit: {
+      type: String,
+      default: 'false'
+    },
     user: {
+      type: Object,
+      default: {}
+    },
+    detial: {
       type: Object,
       default: {}
     },
@@ -113,6 +147,10 @@ export default class ModalPlugin extends wepy.component {
     date: {
       type: String,
       default: ''
+    },
+    origin_price: {
+      type: Number,
+      default: 0
     }
   }
   data = {
@@ -183,11 +221,32 @@ export default class ModalPlugin extends wepy.component {
   font-size: 18px;
   font-weight: 500;
   letter-spacing: 2rpx;
-  text-align: center;
+  margin-left: 60rpx;
+}
+.view-tip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  .tip-date {
+    position: absolute;
+    top: 18rpx;
+    left: 16rpx;
+    color: #fff;
+    font-size: 16px;
+  }
+}
+.view-slice {
+  margin-top: 12rpx;
+  font-size: 13px;
+}
+.view-item {
+  margin: 24rpx 0 0 4rpx;
+  font-size: 14px;
 }
 .tag {
   padding: 6rpx 30rpx;
-  border-radius: 8rpx;
+  border-radius: 50rpx;
   color: #fff;
   font-size: 13px;
   white-space: nowrap;
@@ -202,9 +261,10 @@ export default class ModalPlugin extends wepy.component {
 .modal-content {
   padding: 40rpx 60rpx 60rpx 60rpx;
   .cate {
-    margin-bottom: 24rpx;
+    margin-bottom: 18rpx;
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
   }
 }
 .modal-input {
@@ -222,6 +282,15 @@ export default class ModalPlugin extends wepy.component {
 }
 input-holder {
   color: #9b9b9b;
+}
+
+.btn-close {
+  background: #ffb3b3 !important;
+  border: 0 !important;
+  color: #fff !important;
+  border-radius: 100rpx;
+  margin: 0 25% 36rpx 25%;
+  line-height: 80rpx;
 }
 
 .modal-footer {

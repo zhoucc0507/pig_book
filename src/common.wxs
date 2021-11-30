@@ -1,5 +1,12 @@
-var getPrice = function (price) {
-  return price
+module.exports = {
+  getPrice: function (price) {
+    return price
+  },
+  getTagColor: function (tag, cates) {
+    var background = ''
+    for (var index = 0; index < cates.length; index++) {
+      if (cates[index].name === tag) background = cates[index].background
+    }
+    return background
+  }
 }
-
-module.exports = getPrice

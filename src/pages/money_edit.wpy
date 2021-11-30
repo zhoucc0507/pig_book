@@ -23,10 +23,10 @@
           <repeat for="{{ cates }}" item="cate">
             <span bindtap="onChooseCate({{ cate }})" style="background: {{ cate.background }}; opacity: {{ cate.name === cate_select ? 0.3 : 1 }}; pointer-events: {{ cate.name === cate_select ? 'none' : '' }}">{{ cate.name }}</span>
           </repeat>
-          <span bindtap="onReset" style="color: #999; border: 2rpx dashed; padding: 4rpx 88rpx">重置</span>
+          <span bindtap="onReset" style="color: #999; border: 2rpx dashed; padding: 4rpx 88rpx; border-radius: 8rpx">重置</span>
         </view>
         <view class="pay_list" style="margin-top: {{ cates_show ? 0 : '-30rpx' }}">
-          <view class="deatial" style="color: #fff; background: #000; padding: 24rpx">
+          <view class="deatial" style="color: #fff; background: #ffb3b3; padding: 20rpx; font-weight: 600">
             <view class="date">日期</view>
             <view class="pay_price">支出金额</view>
             <view class="surplus_price">可支配金额</view>
@@ -35,9 +35,9 @@
             <repeat for="{{ pay_list }}" item="item">
               <view class="deatial">
                 <view class="date">{{ item.date }}</view>
-                <view class="pay_price">{{ getPrice(item.pay_price) }}</view>
+                <view class="pay_price">{{ common.getPrice(item.pay_price) }}</view>
                 <view class="surplus_price" bindtap="viewMore({{ item }})" style="color: {{ origin_price - item.pay_price > 0 ? '#18baa5' : '#ff547a' }}">
-                  <span style="margin: 0 24rpx 0 auto; text-align: center">{{ getPrice(origin_price - item.pay_price) }}</span>
+                  <span style="margin: 0 24rpx 0 auto; text-align: center">{{ common.getPrice(origin_price - item.pay_price) }}</span>
                   <button plain="true">详情</button>
                 </view>
               </view>
@@ -47,6 +47,8 @@
         </view>
       </view>
     </view>
+    <view class="charts-title" wx:if="{{ pay_list.length !== 0 }}">小账本统计</view>
+    <scatter-chart />
     <modal-quota
       :show.sync="quota_show"
       user_edit="false"
@@ -70,6 +72,13 @@
       repair_edit="true"
       title="支出金额(诚信是金)"
       placeholder="请输入支出金额" />
+    <modal-detial
+     :show.sync="detial_show"
+     :detial.sync="detial"
+     :cates.sync="cates"
+     :origin_price.sync="origin_price"
+     title="支出详情"
+     detial_edit="true" />
     <modal-user
       :show.sync="user_show"
       :user.sync="user"
@@ -81,12 +90,30 @@
 import wepy from 'wepy'
 import UserInfo from '../components/user_info'
 import ModalPlugin from '../components/modal_plugin'
+import ScatterChart from '../components/echarts/scatter_charts'
 import moment from 'moment'
-import getPrice from '../common.wxs'
+import common from '../common.wxs'
 export default class MoneyEdit extends wepy.page {
   wxs = {
-    getPrice: getPrice
+    common: common
   }
+
+  config = {
+    usingComponents: {
+      'ec-canvas': '../components/echarts/ec-canvas/ec-canvas'
+    }
+  }
+
+  components = {
+    'user-info': UserInfo,
+    'modal-quota': ModalPlugin,
+    'modal-record': ModalPlugin,
+    'modal-user': ModalPlugin,
+    'modal-repair': ModalPlugin,
+    'modal-detial': ModalPlugin,
+    'scatter-chart': ScatterChart
+  }
+
   data = {
     origin_price: 0,
     total_price: 0,
@@ -106,26 +133,22 @@ export default class MoneyEdit extends wepy.page {
     record_show: false,
     user_show: false,
     repair_show: false,
+    detial_show: false,
     repair_date: '',
+    detial: {},
     pay_list: [],
     cates: [
       {name: '红包', background: '#ff4d4f'},
-      {name: '餐饮', background: '#40a9ff'},
+      {name: '餐饮', background: '#ffc300'},
       {name: '出行', background: '#48b755'},
       {name: '百货', background: '#b4b68f'},
-      {name: '服饰', background: '#faad14'},
+      {name: '服饰', background: '#03b6fd'},
       {name: '美妆', background: '#bc8ddb'},
       {name: '数码', background: '#c24770'},
       {name: '娱乐', background: '#ca9654'}
     ]
   }
-  components = {
-    'user-info': UserInfo,
-    'modal-quota': ModalPlugin,
-    'modal-record': ModalPlugin,
-    'modal-user': ModalPlugin,
-    'modal-repair': ModalPlugin
-  }
+
   events = {
     'onConfirm': (avatar_url, user_name, user_desc) => {
       if (this.quota_show) {
@@ -223,6 +246,7 @@ export default class MoneyEdit extends wepy.page {
       this.record_show = false
       this.user_show = false
       this.repair_show = false
+      this.detial_show = false
       if (wepy.getStorageSync('user')) this.user = JSON.parse(wepy.getStorageSync('user'))
       else this.user = { user_name: '', user_desc: '', avatar_url: '' }
     },
@@ -262,7 +286,8 @@ export default class MoneyEdit extends wepy.page {
       })
     },
     'onUserNameChange': (user_name) => {
-      this.user.user_name = user_name
+      if (user_name.length > 5) wx.showToast({ icon: 'none', title: '名字不超过5个字嗷' })
+      else this.user.user_name = user_name
     },
     'onUserDescChange': (user_desc) => {
       this.user.user_desc = user_desc
@@ -271,7 +296,11 @@ export default class MoneyEdit extends wepy.page {
       this.repair_date = date
     }
   }
+
   methods = {
+    echartInit (e) {
+      this.initChart(e.detail.canvas, e.detail.width, e.detail.height)
+    },
     recordInsert() {
       this.record_show = true
       this.quota_show = false
@@ -310,23 +339,8 @@ export default class MoneyEdit extends wepy.page {
       this.loadPage()
     },
     viewMore(item) {
-      let content = ''
-      item.detial.map(detial => {
-        if (detial.category && detial.cate) {
-          content += `${detial.time} 支出金额:${detial.pay_price}(「${detial.category}」${detial.cate})\r\n`
-        } else if (detial.category && !detial.cate) {
-          content += `${detial.time} 支出金额:${detial.pay_price}(「${detial.category}」)\r\n`
-        } else if (!detial.category && detial.cate) {
-          content += `${detial.time} 支出金额:${detial.pay_price}(${detial.cate})\r\n`
-        } else {
-          content += `${detial.time} 支出金额:${detial.pay_price}\r\n`
-        }
-      })
-      wx.showModal({
-        title: '详情',
-        content: content,
-        showCancel: false
-      })
+      this.detial_show = true
+      this.detial = Object.assign({}, item, { date: moment(item.date).format('DD') })
     }
   }
   onLoad() {
@@ -339,7 +353,6 @@ export default class MoneyEdit extends wepy.page {
       wepy.setStorageSync('firstdate', '')
     }
     this.loadPage()
-    this.loadUserInfo()
   }
   loadPage() {
     if (wepy.getStorageSync('origin_price')) this.origin_price = JSON.parse(wepy.getStorageSync('origin_price'))
@@ -358,21 +371,19 @@ export default class MoneyEdit extends wepy.page {
     this.total_price = total_price
     this.$apply()
   }
-  loadUserInfo() {
-    this.user_name = wepy.getStorageSync('userName')
-    this.avatar_url = wepy.getStorageSync('avatarUrl')
-    this.$apply()
-  }
 }
 </script>
 <style lang="less">
 .page {
-  padding: 24rpx 22rpx;
-  background: #f8f8f8;
+  .line-chart {
+    width: 700rpx;
+    height: 600rpx;
+    margin: 0 auto;
+  }
   .user-card {
     background: #fff;
     border-radius: 10rpx;
-    padding: 22rpx;
+    padding: 36rpx;
     .card-header {
       display: flex;
     }
@@ -402,10 +413,11 @@ export default class MoneyEdit extends wepy.page {
         margin-top: 24rpx;
         display: flex;
         flex-wrap: wrap;
+        justify-content: center;
         span {
           margin-bottom: 18rpx;
           padding: 6rpx 28rpx;
-          border-radius: 8rpx;
+          border-radius: 50rpx;
           color: #fff;
           font-size: 13px;
           white-space: nowrap;
@@ -423,7 +435,7 @@ export default class MoneyEdit extends wepy.page {
           display: flex;
           margin-top: 36rpx;
           font-size: 14px;
-          font-weight: 800;
+          border-radius: 100rpx;
           .date, .pay_price, .surplus_price {
             flex: 1;
             display: flex;
@@ -443,6 +455,9 @@ export default class MoneyEdit extends wepy.page {
       }
     }
   }
-
+  .charts-title {
+    padding-left: 36rpx;
+    font-weight: 500;
+  }
 }
 </style>
