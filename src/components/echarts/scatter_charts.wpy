@@ -104,7 +104,7 @@ export default class ScatterChart extends wepy.component {
         },
         labelLine: {
           show: false,
-          length: 10,
+          length: 15,
           length2: 0
         },
         data: data
@@ -121,5 +121,6 @@ export default class ScatterChart extends wepy.component {
 .scatter-chart {
   height: 600rpx;
   background: #fff;
+  z-index: -999;
 }
 </style>
