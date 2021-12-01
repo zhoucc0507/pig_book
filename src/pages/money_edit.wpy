@@ -48,7 +48,7 @@
       </view>
     </view>
     <view class="charts-title" wx:if="{{ pay_list.length !== 0 }}">小账本统计</view>
-    <scatter-chart />
+    <scatter-chart wx:if="{{ !cates_show && !quota_show && !record_show && !user_show && !repair_show && !detial_show }}" />
     <modal-quota
       :show.sync="quota_show"
       user_edit="false"
