@@ -1,6 +1,6 @@
 {
   "name": "money_save",
-  "version": "1.0.9",
+  "version": "2.0.0",
   "description": "A WePY project",
   "main": "dist/app.js",
   "scripts": {

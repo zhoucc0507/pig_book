@@ -19,19 +19,19 @@
             <image style="width: 48rpx; height: 48rpx; margin-left: 24rpx" bindtap="onCateFilter" src="../images/icon_screen.png" />
           </view>
         </view>
-        <view style="height: {{ cates_show ? 128 : 0 }}rpx" class="cates_list">
+        <view style="height: {{ cates_show ? 128 : 0 }}rpx; margin: {{ cates_show ? '24rpx 0' : 0 }}" class="cates_list">
           <repeat for="{{ cates }}" item="cate">
             <span bindtap="onChooseCate({{ cate }})" style="background: {{ cate.background }}; opacity: {{ cate.name === cate_select ? 0.3 : 1 }}; pointer-events: {{ cate.name === cate_select ? 'none' : '' }}">{{ cate.name }}</span>
           </repeat>
           <span bindtap="onReset" style="color: #999; border: 2rpx dashed; padding: 4rpx 88rpx; border-radius: 8rpx">重置</span>
         </view>
-        <view class="pay_list" style="margin-top: {{ cates_show ? 0 : '-30rpx' }}">
-          <view class="deatial" style="color: #fff; background: #ffb3b3; padding: 20rpx; font-weight: 600">
-            <view class="date">日期</view>
+        <view class="pay_list">
+          <view class="deatial" style="color: #fff; background: #ffb3b3; padding: 20rpx; font-weight: 600; margin-top: 0">
+            <view class="date" bindtap="arrowChange" style="pointer-events: {{ pay_list.length < 5 ? 'none' : '' }}"><image wx:if="{{ pay_list.length > 4 }}" style="transform: {{ arrow_show ? 'rotate(180deg)' : '' }}" src="../images/icon_arrow.png" class="icon_arrow" />日期</view>
             <view class="pay_price">支出金额</view>
             <view class="surplus_price">可支配金额</view>
           </view>
-          <blcok wx:if="{{ pay_list.length !== 0 }}">
+          <view class="item_list" wx:if="{{ pay_list.length !== 0 }}" style="height: {{ arrow_show ? pay_list.length * 102 : pay_list.length > 4 ? 420 : '' }}rpx">
             <repeat for="{{ pay_list }}" item="item">
               <view class="deatial">
                 <view class="date">{{ item.date }}</view>
@@ -42,13 +42,15 @@
                 </view>
               </view>
             </repeat>
-          </blcok>
+          </view>
           <view wx:else class="empty">暂无记录</view>
         </view>
       </view>
     </view>
-    <view class="charts-title" wx:if="{{ pay_list.length !== 0 }}">小账本统计</view>
-    <scatter-chart wx:if="{{ !cates_show && !quota_show && !record_show && !user_show && !repair_show && !detial_show }}" />
+    <block wx:if="{{ !arrow_show && !cates_show && !quota_show && !record_show && !user_show && !repair_show && !detial_show }}">
+      <view class="charts-title" wx:if="{{ pay_list.length !== 0 }}">小账本统计</view>
+      <scatter-chart />
+    </block>
     <modal-quota
       :show.sync="quota_show"
       user_edit="false"
@@ -134,6 +136,7 @@ export default class MoneyEdit extends wepy.page {
     user_show: false,
     repair_show: false,
     detial_show: false,
+    arrow_show: false,
     repair_date: '',
     detial: {},
     pay_list: [],
@@ -318,6 +321,9 @@ export default class MoneyEdit extends wepy.page {
     onCateFilter() {
       this.cates_show = !this.cates_show
     },
+    arrowChange() {
+      this.arrow_show = !this.arrow_show
+    },
     onChooseCate(cate) {
       this.cate_select = ''
       this.loadPage()
@@ -354,9 +360,18 @@ export default class MoneyEdit extends wepy.page {
     }
     this.loadPage()
   }
+
+  onShareAppMessage(options) {
+    return {
+      title: `pigzhou ❤ pigliu | 猪头小账本`,
+      success: res => this.showSuccess('分享成功'),
+      fail: res => this.showError('分享失败，请稍后再试')
+    }
+  }
+
   loadPage() {
     if (wepy.getStorageSync('origin_price')) this.origin_price = JSON.parse(wepy.getStorageSync('origin_price'))
-    if (wepy.getStorageSync('pay_list') && !this.cate_select) this.pay_list = JSON.parse(wepy.getStorageSync('pay_list')).sort((a, b) => moment(a.date).isBefore(b.date) ? -1 : 1)
+    if (wepy.getStorageSync('pay_list') && !this.cate_select) this.pay_list = JSON.parse(wepy.getStorageSync('pay_list')).sort((a, b) => moment(b.date).isBefore(a.date) ? -1 : 1)
     if (wepy.getStorageSync('user')) this.user = JSON.parse(wepy.getStorageSync('user'))
     let spulars_price = 0
     let total_price = 0
@@ -394,6 +409,7 @@ export default class MoneyEdit extends wepy.page {
         align-items: center;
         font-size: 16px;
         font-weight: 500;
+        margin-bottom: 24rpx;
         .edit {
           width: 50%;
           align-items: center;
@@ -409,8 +425,6 @@ export default class MoneyEdit extends wepy.page {
       .cates_list {
         overflow: hidden;
         transition: height 0.3s;
-        margin-bottom: -12rpx;
-        margin-top: 24rpx;
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
@@ -431,16 +445,29 @@ export default class MoneyEdit extends wepy.page {
           color: #9b9b9b;
           text-align: center;
         }
+        .item_list {
+          transition: height 0.3s;
+          overflow-y: scroll;
+        }
         .deatial {
           display: flex;
-          margin-top: 36rpx;
+          margin-top: 32rpx;
           font-size: 14px;
           border-radius: 100rpx;
+          position: relative;
           .date, .pay_price, .surplus_price {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
+          }
+          .icon_arrow {
+            transition: 0.3s;
+            width: 30rpx;
+            height: 30rpx;
+            position: absolute;
+            top: 28rpx;
+            left: 42rpx;
           }
           .surplus_price {
             button {
