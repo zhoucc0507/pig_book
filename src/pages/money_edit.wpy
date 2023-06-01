@@ -94,6 +94,7 @@ import UserInfo from '../components/user_info'
 import ModalPlugin from '../components/modal_plugin'
 import ScatterChart from '../components/echarts/scatter_charts'
 import moment from 'moment'
+import 'moment/locale/zh-cn'
 import common from '../common.wxs'
 export default class MoneyEdit extends wepy.page {
   wxs = {
@@ -153,7 +154,7 @@ export default class MoneyEdit extends wepy.page {
   }
 
   events = {
-    'onConfirm': (avatar_url, user_name, user_desc) => {
+    'onConfirm': () => {
       if (this.quota_show) {
         if (!this.quota) {
           wepy.showToast({ title: '请输入额度', icon: 'none' })
@@ -297,6 +298,20 @@ export default class MoneyEdit extends wepy.page {
     },
     'onDateChange': (date) => {
       this.repair_date = date
+    },
+    'onRepairUpdate': (currentDate, currentIndex, repairPrice, editTitle) => {
+      let pay_list = JSON.parse(wepy.getStorageSync('pay_list'))
+      for (let i = 0; i < pay_list.length; i++) {
+        if (pay_list[i].date === currentDate) {
+          const obj = { title: editTitle, price: +repairPrice, time: moment().format('YYYY-MM-DD HH:mm:ss') }
+          if (pay_list[i].detial[currentIndex].records) pay_list[i].detial[currentIndex].records.push(obj)
+          else pay_list[i].detial[currentIndex].records = [obj]
+          if (editTitle === 'repair') pay_list[i].pay_price += +repairPrice
+          else pay_list[i].pay_price -= +repairPrice
+        }
+      }
+      wepy.setStorageSync('pay_list', JSON.stringify(pay_list))
+      this.loadPage()
     }
   }
 
@@ -346,7 +361,7 @@ export default class MoneyEdit extends wepy.page {
     },
     viewMore(item) {
       this.detial_show = true
-      this.detial = Object.assign({}, item, { date: moment(item.date).format('DD') })
+      this.detial = Object.assign({}, item, { date: moment(item.date).format('DD'), realDate: item.date })
     }
   }
   onLoad() {

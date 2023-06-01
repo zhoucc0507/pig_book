@@ -4,13 +4,29 @@ import wepy from 'wepy'
 export default class extends wepy.app {
   config = {
     pages: [
-      'pages/money_edit'
+      'pages/money_edit',
+      'pages/abstain_sugar'
     ],
     window: {
       backgroundTextStyle: 'light',
       navigationBarBackgroundColor: '#fff',
       navigationBarTitleText: '猪头小账本',
       navigationBarTextStyle: 'black'
+    },
+    tabBar: {
+      color: '#C2C2C2',
+      selectedColor: '#ffb3b3',
+      list: [{
+        pagePath: 'pages/money_edit',
+        text: '小账本',
+        iconPath: 'images/icon_book.png',
+        selectedIconPath: 'images/icon_book_selected.png'
+      }, {
+        pagePath: 'pages/abstain_sugar',
+        text: '戒糖日记',
+        iconPath: 'images/icon_prohibit.png',
+        selectedIconPath: 'images/icon_prohibit_selected.png'
+      }]
     },
     useExtendedLib: {
       weui: true
