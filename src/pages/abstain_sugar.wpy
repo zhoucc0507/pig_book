@@ -1,0 +1,120 @@
+<template>
+  <view id="abstainSugar">
+    <view class="current_date">
+      <span>{{ currentDate }}</span>
+      <span style="margin-left: 24px">{{ currentWeek }}</span>
+    </view>
+    <view class="week_bar">
+      <span style="color: #ffb3b3">日</span>
+      <span>一</span>
+      <span>二</span>
+      <span>三</span>
+      <span>四</span>
+      <span>五</span>
+      <span style="color: #ffb3b3">六</span>
+    </view>
+    <view class="date_list">
+      <repeat for="{{ dateList }}" key="dateNo" item="item" index="index">
+        <view wx:if="item.dateNo" class="item">
+          <div class="data_no, {{currentDateIndex === item.dateNo ? 'current' : ''}}">{{ item.dateNo }}</div>
+        </view>
+        <view wx:else class="item" />
+      </repeat>
+    </view>
+  </view>
+  <view style="text-align: center; margin-top: 128rpx">
+    <image src="../images/expect.png" mode="widthFix" style="width: 100px" />
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import moment from 'moment'
+export default class AbstainSugar extends wepy.page {
+  data = {
+    currentDate: '',
+    currentWeek: '',
+    currentDateIndex: 0,
+    dateList: []
+  }
+
+  methods = {}
+
+  onLoad() {
+    this.currentDate = moment().format('YYYY年MM月DD日')
+    this.currentWeek = moment().format('dddd')
+    this.currentDateIndex = Number(moment().format('DD'))
+    this.loadPage()
+  }
+
+  loadPage() {
+    const currentMonth = moment().month() + 1
+    const stroageMonthInfo = wepy.getStorageSync(String(currentMonth))
+
+    if (stroageMonthInfo) this.dateList = stroageMonthInfo
+    else this.loadDateList(moment().daysInMonth())
+  }
+
+  loadDateList(total) {
+    let dateList = []
+    const firstWeek = moment(moment().format('YYYY-MM-01')).format('dddd')
+    if (firstWeek === '星期日') return
+    else if (firstWeek === '星期-') dateList.push({})
+    else if (firstWeek === '星期二') dateList.push({}, {})
+    else if (firstWeek === '星期三') dateList.push({}, {}, {})
+    else if (firstWeek === '星期四') dateList.push({}, {}, {}, {})
+    else if (firstWeek === '星期五') dateList.push({}, {}, {}, {}, {})
+    else dateList.push({}, {}, {}, {}, {}, {})
+
+    for (let i = 0; i < total; i++) {
+      const no = i + 1 < 10 ? `0${i + 1}` : i + 1
+      dateList.push({
+        dateNo: i + 1,
+        weekName: moment(`${moment().format('YYYY-MM')}-${no}`).format('dddd'),
+        type: '' // normal 正常, abnormal 非正常, '' 没有打卡
+      })
+    }
+
+    this.dateList = dateList
+  }
+}
+</script>
+
+<style lang="less">
+#abstainSugar {
+  .current_date {
+    text-align: center;
+    padding: 10px 0;
+    background: #ffb3b3;
+    color: #fff;
+  }
+  .week_bar, .date_list {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    text-align: center;
+    span, .item {
+      flex: 0 0 14.28%;
+    }
+  }
+  .date_list {
+    .item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      .data_no {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+      }
+      .current {
+        background: #ffb3b3;
+        border-radius: 50%;
+        color:  #fff;
+      }
+    }
+  }
+}
+</style>

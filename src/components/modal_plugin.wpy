@@ -1,9 +1,10 @@
 <template>
   <block>
     <view
+      wx:if="{{show}}"
       class="modal-mask"
       catchtouchmove="preventTouchMove"
-      wx:if="{{show}}" />
+      bindtap="onCancel" />
     <view class="modal-dialog" wx:if="{{ show }}" style="top: {{ cate_edit === 'true' ? '12%' : '22%' }}">
       <view class="modal-title">{{ title }}</view>
       <block wx:if="{{ detial_edit === 'true' }}">
@@ -15,13 +16,36 @@
             <span style="margin-left: 24rpx">可支配金额: <span style="font-size: 16px; color: {{ origin_price - detial.pay_price > 0 ? '#18baa5' : '#ff547a' }}">{{ origin_price - detial.pay_price }}</span></span>
           </view>
           <view class="view-slice">
-            <repeat for="{{ detial.detial }}" item="item" key="id">
+            <repeat for="{{ detial.detial }}" item="item" index="index" key="id">
               <view class="view-item">
-                <span wx:if="{{ item.category }}" class="tag" style="font-size: 12px; padding: 4rpx 12rpx; border-radius: 8rpx;background: {{ common.getTagColor(item.category, cates) }}">{{ item.category }}</span>
+                <span wx:if="{{ item.category }}" class="tag" style="font-size: 12px; padding: 4rpx 12rpx; border-radius: 8rpx; background: {{ common.getTagColor(item.category, cates) }}; height: 18px; line-height: 18px">{{ item.category }}</span>
                 <span>{{ item.time }} </span>
-                <span>{{ item.cate }}</span>
-                <span style="color: #ff547a; font-size: 18px"> {{ item.pay_price }} </span>元
+                <span style="margin-left: 12px">{{ item.cate }}</span>
+                <span style="color: #ff547a; font-size: 18px; margin: 0 5px"> {{ item.pay_price }} </span>元
+                <span wx:if="{{item.records}}" class="repair-tag" bindtap="onTagChange({{item.records}},{{index}})">有退补</span>
+                <div style="display: flex; margin-left: auto">
+                  <span class="btn-repair" bindtap="onItemEdit('repair', {{index}})">补</span>
+                  <span class="btn-refund" bindtap="onItemEdit('refund', {{index}})" style="margin-right: 0">退</span>
+                </div>
               </view>
+              <input
+                wx:if="{{index === currentIndex}}"
+                placeholder-class="repair-input-holder"
+                class="repair-input"
+                type="number"
+                placeholder="请输入差价({{ editTitle === 'repair' ? '补' : '退' }})"
+                bindinput="onRepairChange"
+              />
+              <block wx:if="{{ visible && recordIndex === index }}">
+                <repeat for="{{ records }}" item="record" key="id">
+                  <view class="view-item" style="font-size: 12px; margin-left: 10rpx">
+                    <span wx:if="{{ record.title === 'repair' }}" class="btn-repair-mini">补</span>
+                    <span wx:else class="btn-refund-mini">退</span>
+                    <span>{{ record.time }} </span>
+                    <span style="color: #ff547a; font-size: 14px; margin: 0 5px"> {{ record.price }} </span>元
+                  </view>
+                </repeat>
+              </block>
             </repeat>
           </view>
         </view>
@@ -156,9 +180,32 @@ export default class ModalPlugin extends wepy.component {
   data = {
     cate: '',
     background: '',
-    endDate: moment().format('YYYY-MM-DD')
+    currentIndex: null,
+    recordIndex: null,
+    repairPrice: null,
+    records: [],
+    visible: false,
+    endDate: moment().format('YYYY-MM-DD'),
+    editTitle: 'repair'
   }
   methods = {
+    onItemEdit (editTitle, index) {
+      this.editTitle = editTitle
+      this.currentIndex = index
+    },
+    onRepairChange(e) {
+      this.repairPrice = e.detail.value
+    },
+    onTagChange(records, index) {
+      if (this.recordIndex === index) {
+        this.recordIndex = null
+        this.visible = false
+      } else {
+        this.records = records
+        this.recordIndex = index
+        this.visible = true
+      }
+    },
     onInputChange(e) {
       this.$emit('onInputChange', e.detail.value)
     },
@@ -169,6 +216,13 @@ export default class ModalPlugin extends wepy.component {
       this.$emit('onConfirm')
     },
     onCancel() {
+      if (this.detial_edit === 'true' && this.repairPrice) {
+        this.$emit('onRepairUpdate', this.detial.realDate, this.currentIndex, this.repairPrice, this.editTitle)
+      }
+      this.currentIndex = null
+      this.recordIndex = null
+      this.repairPrice = null
+      this.records = []
       this.$emit('onCancel')
     },
     onImageChange() {
@@ -239,10 +293,52 @@ export default class ModalPlugin extends wepy.component {
 .view-slice {
   margin-top: 12rpx;
   font-size: 13px;
+  .repair-input {
+    height: 60rpx;
+    line-height: 60rpx;
+    padding-left: 24rpx;
+    margin: 16rpx 0 0 auto;
+    border-radius: 100rpx;
+    background: #f1f1f1;
+  }
+  .repair-input-holder {
+    color: #9b9b9b;
+  }
 }
 .view-item {
+  display: flex;
+  align-items: center;
   margin: 24rpx 0 0 4rpx;
   font-size: 14px;
+  .repair-tag {
+    font-size: 8px;
+    color: #ff4d4f;
+    margin-top: -5px;
+  }
+  .btn-repair, .btn-refund, .btn-repair-mini, .btn-refund-mini {
+    display: block;
+    border-radius: 50%;
+    font-size: 12px;
+    width: 36rpx;
+    height: 36rpx;
+    border: 2rpx solid #18baa5;
+    line-height: 36rpx;
+    text-align: center;
+    color: #18baa5;
+    margin-right: 24rpx;
+    overflow: hidden;
+  }
+  .btn-refund, .btn-refund-mini {
+    border: 2rpx solid #ffb3b3;
+    color: #ffb3b3;
+  }
+  .btn-repair-mini, .btn-refund-mini {
+    font-size: 8px;
+    width: 20rpx;
+    height: 20rpx;
+    line-height: 20rpx;
+    margin-right: 12rpx;
+  }
 }
 .tag {
   padding: 6rpx 30rpx;
