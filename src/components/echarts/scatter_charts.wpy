@@ -49,9 +49,24 @@ export default class ScatterChart extends wepy.component {
     listArr = listArr.reduce((preVal, curVal) => {
       if (hasOwns[curVal.category]) {
         for (let index = 0; index < preVal.length; index++) {
-          if (preVal[index].category === curVal.category) preVal[index].pay_price = preVal[index].pay_price + curVal.pay_price
+          if (preVal[index].category === curVal.category) {
+            let price = preVal[index].pay_price + curVal.pay_price
+            if (curVal.records) {
+              for (let record of curVal.records) {
+                if (record.title === 'repair') price += record.price
+                else price -= record.price
+              }
+            }
+            preVal[index].pay_price = price
+          }
         }
       } else {
+        if (curVal.records) {
+          for (let record of curVal.records) {
+            if (record.title === 'repair') curVal.pay_price += record.price
+            else curVal.pay_price -= record.price
+          }
+        }
         preVal.push(curVal)
         hasOwns[curVal.category] = true
       }
